@@ -30,7 +30,8 @@ job_data = {}
 def rcv_requests(master_addr, master_recv_port):
 	master_request_sckt = socket(AF_INET, SOCK_STREAM)
 	master_request_sckt.connect((master_addr, master_recv_port))
-	master_request_sckt.recv(task_data)
+	task_data  = master_request_sckt.recv(1024)
+	task_data = task_data.decode()
 	#print(task_data.decode())
 	with json.load(task_data)['job_id'] as job:
 		if job[0] in job_data['job_id']: 
@@ -46,7 +47,7 @@ def rcv_requests(master_addr, master_recv_port):
 			else:
 				mapper_tasks[j] = [i[j]]
 	job_data['mapper_data'] = mapper_tasks
-	
+
 	#Storing all the reducer tasks in an array.
 	for i in json.load(task_data)["reduce_tasks"]:
 		for j in i:
@@ -57,11 +58,18 @@ def rcv_requests(master_addr, master_recv_port):
 	job_data['reducer_data'] = reduce_tasks
 
 	
-def send_to_workers(master_addr, master_worker_ack_port):	
+def send_request_workers(master_addr, master_worker_ack_port):	
 	sckt = socket(AF_INET, SOCK_STREAM)
 	sckt.bind((master_addr,scheduler_algorithm(scheduling_algo)))
-
-
+	sckt.listen()
+	conn, addr = sckt.accept()
+	with conn:
+		while True:
+			data = con.recv(1024)
+			if not data:
+				break
+			message = json.dumps(job_data)
+			conn.send(message.encode())
 
 def scheduler_algorithm(scheduling_algo):
 	if scheduling_algo == 'RAND':
