@@ -94,6 +94,10 @@ def random_sch(task_id, task_dur):
 		worker_port_no = random.randint(0,2)
 		if worker_data['slots'][worker_port_no] > 0 :
 			worker_data['slots'][worker_port_no] -= 1
+			filename = "worker_RANDOM.txt"
+			worker_log = open(filename, "a")
+			worker_log.write(str(worker_data['worker_id'][worker_port_no]) + "\t"+ str(worker_data['slots'][worker_port_no])+'\t'+ str(time.time())+"\n")
+			worker_log.close()	
 			worker_data_port = worker_data['port'][worker_port_no]
 			slot_update_lock.release()
 			break
@@ -106,12 +110,17 @@ def random_sch(task_id, task_dur):
 #Round robin scheduler.
 def round_robin(task_id, task_dur):
 	#print('implementing round robin algo')
+	worker_data_port = 0
 	worker_port_no = 0
 	while True:
 		slot_update_lock.acquire()
 		if worker_data['slots'][worker_port_no] > 0 :
-			worker_data['slots'][worker_port_no] -= 1 
-			worker_data_port = worker_data['port'][worker_port_no]
+			worker_data['slots'][worker_port_no] -= 1
+			filename = "worker_RR.txt"
+			worker_log = open(filename, "a")
+			worker_log.write(str(worker_data['worker_id'][worker_port_no]) + "\t"+ str(worker_data['slots'][worker_port_no])+'\t'+ str(time.time())+"\n")
+			worker_log.close()
+			worker_data_port = worker_data['port'][worker_port_no] 
 			worker_port_no = (worker_port_no + 1) % 3
 			slot_update_lock.release()
 			break
@@ -129,12 +138,18 @@ def least_loaded(task_id, task_dur):
 	#print('implementing ll algo')
 	worker_port_no = worker_data['slots'].index(max(worker_data['slots']))
 	worker_data_port = worker_data['port'][worker_port_no]
+	filename = "worker_LL.txt"
 	while True:
 		slot_update_lock.acquire()
 		if worker_data['slots'][worker_port_no] > 0:
 			worker_data['slots'][worker_port_no] -= 1
+			worker_log = open(filename, "a")
+			worker_log.write(str(worker_data['worker_id'][worker_port_no]) + "\t"+ str(worker_data['slots'][worker_port_no])+'\t'+ str(time.time())+"\n")
+			worker_log.close()	
+			slot_update_lock.release()
 			break
-	slot_update_lock.release()
+		else:
+			slot_update_lock.release()
 	send_worker_thread = threading.Thread(target = send_task_workers, args = (worker_data_port, task_id, task_dur))
 	send_worker_thread.start()
 	update_slots(task_id, worker_port_no)
@@ -226,3 +241,7 @@ rcv_requests_thread.start()
 #Thread for getting acks from workers.
 ack_thread = threading.Thread(target = rcv_ack_workers)
 ack_thread.start()
+
+# Closing the files.
+# job_file.close()
+# task_file.close()
